@@ -209,6 +209,13 @@ tempCodeRunnerFile.py
 # PyPI configuration file
 .pypirc
 
+# macOS
+.DS_Store
+
+# NetScope: MaxMind GeoLite2 database (license prohibits redistribution;
+# app.py downloads it itself from MAXMIND_LICENSE_KEY, or drop it manually)
+*.mmdb
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

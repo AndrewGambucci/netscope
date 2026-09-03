@@ -1,0 +1,5 @@
+flask
+flask-socketio
+scapy
+geoip2
+pywebview
