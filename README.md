@@ -38,12 +38,6 @@ Python · [Scapy](https://scapy.net/) (packet capture) · [Flask](https://flask.
 - Falls back to a scripted demo mode if no GeoIP database is available at all,
   so the UI is still explorable with zero setup
 
-## Signal, not noise
-
-An earlier version logged every packet on the wire, which mostly meant firehosing
-retransmits, ACKs, and keepalives from every open connection. The sniffer now only
-emits an event for:
-
 - **Outbound** — the SYN that opens a new TCP connection, or a DNS query. This is
   "you asked for something," not "your browser's already-open connection sent
   another chunk of data."
