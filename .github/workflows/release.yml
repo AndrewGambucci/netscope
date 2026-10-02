@@ -1,0 +1,72 @@
+name: Release
+
+# Push a tag like v1.0.0 to build installers and attach them to a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install ".[build]"
+      - name: Generate icons (if netscope/assets/icon.png exists)
+        run: test -f netscope/assets/icon.png && python packaging/make_icons.py || echo "no icon.png, using default"
+      - run: pyinstaller packaging/netscope.spec --noconfirm
+      - name: Ad-hoc sign (required for Apple Silicon to launch the app)
+        run: codesign --force --deep --sign - dist/NetScope.app
+      - run: sh packaging/macos/build_dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.dmg
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install ".[build]"
+      - name: Generate icons (if netscope/assets/icon.png exists)
+        shell: bash
+        run: test -f netscope/assets/icon.png && python packaging/make_icons.py || echo "no icon.png, using default"
+      - run: pyinstaller packaging/netscope.spec --noconfirm
+      - run: choco install innosetup -y --no-progress
+      - name: Build installer
+        shell: bash
+        run: |
+          VERSION=$(python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('netscope/__init__.py').read()).group(1))")
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" "//DAppVersion=$VERSION" packaging/windows/netscope.iss
+          powershell -Command "Compress-Archive -Path dist/NetScope -DestinationPath dist/NetScope-$VERSION-windows-portable.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/*-setup.exe
+            dist/*-portable.zip
+
+  publish:
+    needs: [macos, windows]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true

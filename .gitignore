@@ -1,0 +1,29 @@
+# MaxMind's license doesn't permit redistributing GeoLite2 databases, and DB-IP's file is
+# downloaded per user: never commit location databases.
+*.mmdb
+*.mmdb.gz
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Builds
+build/
+dist/
+*.spec.bak
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local-only
+.claude/
+.env
+NETSCOPE_CHECKLIST.md

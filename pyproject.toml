@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netscope"
+version = "1.0.0"
+description = "Real-time network traffic visualizer: your connections and inbound probes, live on a world map."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Andrew Gambucci" }]
+keywords = ["network", "security", "visualization", "scapy", "flask"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Topic :: System :: Networking :: Monitoring",
+]
+dependencies = [
+  "flask>=3.0",
+  "flask-socketio>=5.3",
+  "simple-websocket>=1.0",
+  "scapy>=2.5",
+  "geoip2>=4.7",
+  "certifi",
+  "pywebview>=5.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+build = ["pyinstaller>=6.6", "pillow>=10"]
+
+[project.scripts]
+netscope = "netscope.cli:main"
+
+[project.gui-scripts]
+netscope-gui = "netscope.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/AndrewGambucci/NetScope"
+Issues = "https://github.com/AndrewGambucci/NetScope/issues"
+
+[tool.setuptools]
+packages = ["netscope"]
+
+[tool.setuptools.package-data]
+netscope = ["templates/*.html", "static/*", "assets/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["UP007"]

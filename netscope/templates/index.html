@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetScope</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+
+<header>
+  <div class="logo">NET<span>SCOPE</span></div>
+  <div class="status-bar">
+    <span><span id="status-dot" class="busy"></span><span id="mode-label" class="mode-busy">CONNECTING…</span></span>
+    <span>IPS <span class="val" id="hdr-ips">0</span></span>
+    <span>COUNTRIES <span class="val" id="hdr-ctry">0</span></span>
+    <button class="btn" id="btn-location" title="Click, then click the map where you are">Set location</button>
+  </div>
+</header>
+
+<div id="banner"><span class="msg" id="banner-msg"></span><span id="banner-actions"></span></div>
+
+<div class="main">
+  <div id="map"></div>
+
+  <aside>
+    <div class="panel-title">▸ Live Connections</div>
+    <div id="feed"></div>
+
+    <div id="toplist">
+      <div class="panel-title">▸ Top Destinations</div>
+      <div id="top-rows"></div>
+    </div>
+
+    <div class="counters">
+      <div class="counter"><div class="counter-val" id="c-pkts" style="font-size:.65rem;letter-spacing:.04em;">—</div><div class="counter-lbl">TOP COUNTRY</div></div>
+      <div class="counter"><div class="counter-val" id="c-ips">0</div><div class="counter-lbl">UNIQUE IPS</div></div>
+      <div class="counter"><div class="counter-val" id="c-ctry">0</div><div class="counter-lbl">COUNTRIES</div></div>
+    </div>
+  </aside>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
