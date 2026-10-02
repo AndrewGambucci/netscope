@@ -37,6 +37,36 @@ On Windows you still need [Npcap](https://npcap.com/#download) first.
 - **Click "Set location"** in the top bar, then click the map where you are. That's where arcs start from. It's saved, and you can change it any time.
 - If you'd rather not grant capture permission yet, click **Show demo** (or run `netscope --demo`) to explore the UI with simulated traffic.
 
+## Try it: light up the map
+With capture running, contact a few servers that are hosted in their own countries, so the arcs spread across the globe:
+
+| Host | Location |
+|---|---|
+| `ethz.ch` | Switzerland |
+| `www.uio.no` | Norway |
+| `yandex.ru` | Russia |
+| `www.uct.ac.za` | South Africa |
+| `www.iitb.ac.in` | India |
+| `www.u-tokyo.ac.jp` | Japan |
+| `www.usp.br` | Brazil |
+| `www.uchile.cl` | Chile |
+
+macOS (Terminal):
+```bash
+for h in ethz.ch www.uio.no yandex.ru www.uct.ac.za www.iitb.ac.in www.u-tokyo.ac.jp www.usp.br www.uchile.cl; do
+  curl -sI -m 8 -o /dev/null "https://$h" &
+done; wait
+```
+
+Windows (PowerShell):
+```powershell
+foreach ($h in "ethz.ch","www.uio.no","yandex.ru","www.uct.ac.za","www.iitb.ac.in","www.u-tokyo.ac.jp","www.usp.br","www.uchile.cl") {
+  curl.exe -sI -m 8 -o NUL "https://$h"
+}
+```
+
+Big sites behind CDNs (Cloudflare, Fastly, Akamai) usually resolve to a server near you, so they show up close to home rather than in their own country.
+
 ## What you're looking at
 | Colour | Meaning |
 |---|---|
