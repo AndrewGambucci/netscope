@@ -1,7 +1,7 @@
 # Contributing
 
 ```bash
-git clone https://github.com/AndrewGambucci/NetScope && cd NetScope
+git clone https://github.com/AndrewGambucci/netscope && cd NetScope
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 pytest          # no root, no network, no GeoIP database needed

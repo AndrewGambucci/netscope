@@ -39,8 +39,8 @@ netscope = "netscope.cli:main"
 netscope-gui = "netscope.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/AndrewGambucci/NetScope"
-Issues = "https://github.com/AndrewGambucci/NetScope/issues"
+Homepage = "https://github.com/AndrewGambucci/netscope"
+Issues = "https://github.com/AndrewGambucci/netscope/issues"
 
 [tool.setuptools]
 packages = ["netscope"]

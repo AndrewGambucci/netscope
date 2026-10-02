@@ -104,7 +104,8 @@ def test_macos_app_bundle(tmp_path):
     info = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
     assert info["CFBundleExecutable"] == "NetScope" and info["CFBundlePackageType"] == "APPL"
     launcher = app / "Contents" / "MacOS" / "NetScope"
-    assert launcher.stat().st_mode & 0o100
+    if sys.platform != "win32":      # Windows has no execute bit; the bundle is only ever used on macOS
+        assert launcher.stat().st_mode & 0o100
     assert "-m netscope" in launcher.read_text() and "/usr/bin/python3" in launcher.read_text()
 
 

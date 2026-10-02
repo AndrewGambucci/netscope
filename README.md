@@ -4,7 +4,7 @@
 
 NetScope watches your machine's new connections and plots them as they happen: the sites you visit and the DNS lookups you make (outbound), and unsolicited connection attempts from the internet (inbound probes, drawn in red).
 
-[![CI](https://github.com/AndrewGambucci/NetScope/actions/workflows/ci.yml/badge.svg)](https://github.com/AndrewGambucci/NetScope/actions/workflows/ci.yml)
+[![CI](https://github.com/AndrewGambucci/netscope/actions/workflows/ci.yml/badge.svg)](https://github.com/AndrewGambucci/netscope/actions/workflows/ci.yml)
 ![platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows-00d4ff)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -12,7 +12,7 @@ NetScope watches your machine's new connections and plots them as they happen: t
 
 ## Install
 
-Download the latest build from the [**Releases**](https://github.com/AndrewGambucci/NetScope/releases/latest) page.
+Download the latest build from the [**Releases**](https://github.com/AndrewGambucci/netscope/releases/latest) page.
 
 ### macOS
 1. Download `NetScope-<version>-macos-<arch>.dmg`, open it, and drag **NetScope** to **Applications** (or straight to your Desktop or Dock).
@@ -26,7 +26,7 @@ Download the latest build from the [**Releases**](https://github.com/AndrewGambu
 
 ### With pip (any macOS or Windows machine with Python 3.10+)
 ```bash
-pip install git+https://github.com/AndrewGambucci/NetScope
+pip install git+https://github.com/AndrewGambucci/netscope
 netscope                      # run it
 netscope --create-shortcut    # put a NetScope icon on your Desktop
 ```
@@ -140,7 +140,7 @@ NetScope is a packet-inspection tool. Only run it on machines and networks you o
 
 ## Development
 ```bash
-git clone https://github.com/AndrewGambucci/NetScope && cd NetScope
+git clone https://github.com/AndrewGambucci/netscope && cd NetScope
 pip install -e ".[dev]"
 pytest && ruff check .
 python -m netscope --demo
