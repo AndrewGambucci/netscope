@@ -116,24 +116,130 @@ function updateTopList(top) {
 }
 
 const feed = $('feed');
+const threatFeed = $('threat-feed');
 const MAX_FEED = 80;
+const MAX_THREATS = 300;
 
-function addFeedItem(d) {
+function feedItem(d) {
   const el = document.createElement('div');
-  el.className = 'feed-item';
+  el.className = 'feed-item' + (d.malicious ? ' threat' : '');
   const place = [d.city, d.country].filter(Boolean).join(', ');
   const proto = Object.hasOwn(PROTO_COLORS, d.proto) ? d.proto : 'OTHER';
   const host = d.hostname
     ? `<div class="feed-host">${esc(d.hostname)}</div>`
     : `<div class="feed-host" style="color:var(--textdim)">${esc(d.ip)}</div>`;
-  el.innerHTML = `${host}
+  let detail = '';
+  if (d.malicious) {
+    const time = new Date(d.ts * 1000).toLocaleTimeString();
+    const target = d.port ? ` → port ${Number(d.port)}` : '';
+    const scan = d.threat === 'scan'
+      ? `<span class="proto-badge proto-PROBE">PORT SCAN · ${Number(d.scan_ports)} PORTS</span>` : '';
+    detail = `<div class="feed-meta"><span>${esc(d.ip)}${esc(target)}</span><span class="feed-time">${esc(time)}</span></div>${scan}`;
+  }
+  const body = `${host}
     <div class="feed-meta">
       <span class="proto-badge proto-${proto}">${esc(d.proto)}</span>
       <span class="country">${esc(place)}</span>
-    </div>`;
+    </div>${detail}`;
+  // Only malicious rows get a block button (the server refuses anything it hasn't flagged itself).
+  el.innerHTML = d.malicious
+    ? `<div class="feed-main">${body}</div><button class="btn block-btn" data-ip="${esc(d.ip)}"></button>`
+    : body;
+  el.dataset.ip = d.ip;
   el.title = `${d.ip}${d.hostname ? '  ' + d.hostname : ''}`;
-  feed.prepend(el);
-  while (feed.children.length > MAX_FEED) feed.lastChild.remove();
+  if (d.malicious) styleBlockButton(el.querySelector('.block-btn'));
+  return el;
+}
+
+// ── blocking (Windows Firewall, via the server) ──────────────────────────────
+let blockedIPs = new Set();
+let blockSupported = true;
+const pendingBlocks = new Set();
+
+function styleBlockButton(btn) {
+  const ip = btn.dataset.ip;
+  const busy = pendingBlocks.has(ip);
+  const blocked = blockedIPs.has(ip);
+  btn.textContent = busy ? '…' : blocked ? 'Unblock' : 'Block';
+  btn.disabled = busy || !blockSupported;
+  btn.title = !blockSupported ? 'Blocking is only available on Windows for now'
+    : blocked ? 'Remove the firewall rule for this IP'
+    : 'Block this IP in Windows Firewall (asks for administrator permission)';
+  btn.closest('.feed-item').classList.toggle('blocked', blocked);
+}
+
+function refreshBlockButtons() {
+  for (const btn of threatFeed.querySelectorAll('.block-btn')) styleBlockButton(btn);
+  renderTabCounts();
+}
+
+threatFeed.addEventListener('click', e => {
+  const btn = e.target.closest('.block-btn');
+  if (!btn || btn.disabled) return;
+  const ip = btn.dataset.ip;
+  pendingBlocks.add(ip);
+  $('threat-msg').textContent = '';
+  refreshBlockButtons();
+  socket.emit(blockedIPs.has(ip) ? 'unblock_ip' : 'block_ip', { ip });
+});
+
+function prependCapped(container, el, max) {
+  container.prepend(el);
+  while (container.children.length > max) container.lastChild.remove();
+}
+
+// ── tabs: Live connections vs. malicious scans ───────────────────────────────
+let activeTab = 'live';
+let nLive = 0, nThreats = 0, unseenThreats = 0;
+const threatIPs = new Set();
+
+function setTab(tab) {
+  activeTab = tab;
+  for (const b of document.querySelectorAll('.tab')) {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  }
+  feed.hidden = tab !== 'live';
+  $('threat-pane').hidden = tab !== 'threats';
+  if (tab === 'threats') unseenThreats = 0;
+  renderTabCounts();
+}
+
+function renderTabCounts() {
+  $('n-live').textContent = nLive;
+  const badge = $('n-threats');
+  badge.textContent = activeTab === 'threats' || !unseenThreats ? nThreats : `${nThreats} (+${unseenThreats})`;
+  badge.classList.toggle('alert', unseenThreats > 0);
+  const blockedHere = [...threatIPs].filter(ip => blockedIPs.has(ip)).length;
+  $('threat-sources').textContent = `${threatIPs.size} source${threatIPs.size === 1 ? '' : 's'}` +
+    (blockedHere ? ` · ${blockedHere} blocked` : '');
+  $('threat-empty').hidden = nThreats > 0;
+}
+
+document.querySelector('.tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab')?.dataset.tab;
+  if (tab) setTab(tab);
+});
+
+$('btn-clear-threats').addEventListener('click', () => {
+  threatFeed.replaceChildren();
+  threatIPs.clear();
+  nThreats = unseenThreats = 0;
+  renderTabCounts();
+});
+
+function addFeedItem(d) {
+  if (d.malicious) {
+    prependCapped(threatFeed, feedItem(d), MAX_THREATS);
+    threatIPs.add(d.ip);
+    nThreats++;
+    if (activeTab !== 'threats') unseenThreats++;
+  } else {
+    prependCapped(feed, feedItem(d), MAX_FEED);
+    nLive++;
+  }
+  renderTabCounts();
 }
 
 // ── status banner ────────────────────────────────────────────────────────────
@@ -196,7 +302,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') setPicking(f
 // ── socket ───────────────────────────────────────────────────────────────────
 const socket = io();
 
-socket.on('connect', refreshBanner);
+socket.on('connect', () => { refreshBanner(); socket.emit('get_blocked'); });
+socket.on('blocked', d => {
+  blockedIPs = new Set(d.ips);
+  blockSupported = d.supported;
+  pendingBlocks.clear();
+  refreshBlockButtons();
+});
+socket.on('block_result', r => {
+  pendingBlocks.delete(r.ip);
+  $('threat-msg').textContent = r.ok ? '' : r.message;
+  refreshBlockButtons();
+});
 socket.on('disconnect', () => {
   status = { mode: 'error', message: 'Lost connection to the NetScope server.' };
   refreshBanner();

@@ -163,6 +163,51 @@
   .proto-OTHER  { background: transparent;          color: var(--textdim); border: 1px solid var(--dim); }
   .proto-PROBE  { background: rgba(255,45,85,.14);  color: #ff2d55;        border: 1px solid rgba(255,45,85,.4); }
 
+  /* tabs: live vs. malicious */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tab {
+    flex: 1;
+    font-family: var(--font-head);
+    font-size: .62rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    padding: 12px 8px 9px;
+    color: var(--textdim);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab[data-tab="threats"].active { color: #ff2d55; border-bottom-color: #ff2d55; }
+  .tab-count { font-family: var(--font-mono); letter-spacing: 0; margin-left: 4px; color: var(--textdim); }
+  .tab-count.threat { color: #ff2d55; }
+  .tab-count.alert { animation: pulse 1.5s infinite; font-weight: bold; }
+
+  [hidden] { display: none !important; }
+  #threat-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #threat-feed { flex: 1; overflow-y: auto; }
+  .threat-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 16px; font-size: .68rem; color: var(--textdim);
+    border-bottom: 1px solid var(--border);
+  }
+  .empty { padding: 20px 16px; font-size: .7rem; line-height: 1.5; color: var(--textdim); text-align: center; }
+  .feed-item.threat { border-left: 2px solid #ff2d55; background: rgba(255,45,85,.04);
+                      display: flex; align-items: center; gap: 8px; }
+  .feed-item.threat .feed-main { flex: 1; min-width: 0; }
+  .block-btn { flex-shrink: 0; color: #ff2d55; background: rgba(255,45,85,.1); border-color: rgba(255,45,85,.45); }
+  .block-btn:hover:not(:disabled) { background: rgba(255,45,85,.25); }
+  .block-btn:disabled { opacity: .5; cursor: default; }
+  .feed-item.blocked { opacity: .7; }
+  .feed-item.blocked .block-btn { color: var(--accent3); background: rgba(57,255,20,.08); border-color: rgba(57,255,20,.4); }
+  .threat-msg { padding: 0 16px; font-size: .66rem; color: #ff2d55; }
+  .threat-msg:not(:empty) { padding: 6px 16px; border-bottom: 1px solid var(--border); }
+  .feed-item.threat .feed-host { color: #ff2d55; }
+  .feed-item.threat .proto-badge { margin: 4px 0 0; }
+  .feed-time { margin-left: auto; }
+
   /* top countries */
   #toplist {
     padding: 0 0 8px;

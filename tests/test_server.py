@@ -88,6 +88,79 @@ def test_demo_mode_emits_events(srv):
         hub.stop_demo()
 
 
+# ── blocking ─────────────────────────────────────────────────────────────────
+PROBE_EV = {"ip": "185.60.218.35", "port": 22, "direction": "in", "proto": "PROBE"}
+
+
+@pytest.fixture
+def fw(monkeypatch):
+    """Replace the real firewall with an in-memory one."""
+    rules = set()
+    monkeypatch.setattr(server.firewall, "supported", lambda: True)
+    monkeypatch.setattr(server.firewall, "block", lambda ip: rules.add(ip) or ip)
+    monkeypatch.setattr(server.firewall, "unblock", lambda ip: rules.discard(ip) or ip)
+    monkeypatch.setattr(server.firewall, "list_blocked", lambda: sorted(rules))
+    return rules
+
+
+def _block_result(client, event, ip):
+    client.get_received()
+    client.emit(event, {"ip": ip})
+    for _ in range(100):
+        msgs = [m["args"][0] for m in client.get_received() if m["name"] == "block_result"]
+        if msgs:
+            return msgs[0]
+        time.sleep(0.03)
+    raise AssertionError("no block_result")
+
+
+def test_flagged_ip_can_be_blocked_and_unblocked(srv, fw):
+    app, socketio, hub, _ = srv
+    hub.pipeline.handle(PROBE_EV)
+    client = socketio.test_client(app)
+    assert _block_result(client, "block_ip", PROBE_EV["ip"])["ok"] is True
+    assert fw == {PROBE_EV["ip"]}
+    assert _block_result(client, "unblock_ip", PROBE_EV["ip"])["ok"] is True
+    assert fw == set()
+
+
+def test_normal_connection_cannot_be_blocked(srv, fw):
+    app, socketio, hub, _ = srv
+    hub.pipeline.handle({"ip": "142.250.80.46", "port": 443, "direction": "out", "proto": "HTTPS"})
+    client = socketio.test_client(app)
+    result = _block_result(client, "block_ip", "142.250.80.46")
+    assert result["ok"] is False and "malicious" in result["message"]
+    assert fw == set()
+
+
+def test_unseen_and_private_ips_cannot_be_blocked(srv, fw):
+    app, socketio, hub, _ = srv
+    hub.pipeline.handle({**PROBE_EV, "ip": "192.168.1.9"})         # even if somehow flagged
+    client = socketio.test_client(app)
+    for ip in ("8.8.8.8", "192.168.1.9", "127.0.0.1", "garbage"):
+        assert _block_result(client, "block_ip", ip)["ok"] is False
+    assert fw == set()
+
+
+def test_demo_traffic_cannot_be_blocked(srv, fw):
+    app, socketio, hub, _ = srv
+    hub.pipeline.handle(PROBE_EV)
+    hub.set_status("demo", "")
+    client = socketio.test_client(app)
+    assert _block_result(client, "block_ip", PROBE_EV["ip"])["ok"] is False
+    assert fw == set()
+
+
+def test_bad_block_payload_is_rejected(srv, fw):
+    app, socketio, _, _ = srv
+    client = socketio.test_client(app)
+    client.get_received()
+    client.emit("block_ip", None)
+    client.emit("block_ip", {"ip": ["x"]})
+    time.sleep(0.3)
+    assert fw == set()
+
+
 # ── helper channel ───────────────────────────────────────────────────────────
 def _send(sock, obj):
     sock.sendall((json.dumps(obj) + "\n").encode())

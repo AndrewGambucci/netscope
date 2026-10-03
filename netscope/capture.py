@@ -28,9 +28,10 @@ from netscope.logs import log
 # Must be set before scapy is imported (see paths.private_cache_dir).
 os.environ["XDG_CACHE_HOME"] = paths.private_cache_dir()
 
-from scapy.all import IP, TCP, UDP, sniff  # noqa: E402
+from scapy.all import IP, TCP, UDP, conf, sniff  # noqa: E402
 
 SNIFF_FILTER = "(tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn) or (udp and port 53)"
+NPCAP_MESSAGE = "Packet capture on Windows needs Npcap. Install it, then click “Enable live capture”."
 
 # Apple's 17.0.0.0/8 (iCloud, push, updates) is chatty background noise on a Mac, so it's hidden
 # by default. Override with NETSCOPE_IGNORE_CIDRS="a.b.c.d/n,..." (empty string = ignore nothing).
@@ -151,7 +152,7 @@ class _Channel:
 def _explain(exc: Exception) -> tuple[str, str]:
     text = str(exc)
     if sys.platform == "win32" and any(w in text.lower() for w in ("winpcap", "npcap", "wpcap", "layer 2")):
-        return "npcap", "Packet capture on Windows needs Npcap. Install it, then click “Enable live capture”."
+        return "npcap", NPCAP_MESSAGE
     if isinstance(exc, PermissionError):
         return "permission", "Permission denied opening the network interface."
     return "capture", f"Packet capture failed: {text}"
@@ -178,6 +179,11 @@ def run_helper(port: int, token: str) -> int:
         os._exit(0)
 
     threading.Thread(target=watch_parent, daemon=True).start()
+
+    if sys.platform == "win32" and not conf.use_pcap:
+        # scapy couldn't load Npcap: say so now, rather than announcing "ready" and failing a moment later
+        chan.send({"t": "err", "code": "npcap", "message": NPCAP_MESSAGE})
+        return 1
 
     local_ips = get_local_ips()
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Windows:** without Npcap, the capture helper reports it straight away instead of briefly showing LIVE.
+- **Windows:** with Microsoft Store Python, the startup log shows the real data folder (Windows redirects
+  that Python's AppData).
+- **Windows:** `--create-shortcut` from a source checkout starts in the checkout folder, so it launches
+  without a pip install (macOS already did this).
+
 ## 1.0.0
 
 First packaged release.

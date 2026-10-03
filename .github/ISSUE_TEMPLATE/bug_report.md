@@ -16,4 +16,4 @@ labels: bug
 
 **Log file** (attach or paste the end of it; it contains no packet contents)
 - macOS: `~/Library/Application Support/NetScope/netscope.log`
-- Windows: `%APPDATA%\NetScope\netscope.log`
+- Windows: `%APPDATA%\NetScope\netscope.log` (Microsoft Store Python: the path NetScope prints at startup)

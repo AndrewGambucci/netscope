@@ -109,8 +109,23 @@ def test_macos_app_bundle(tmp_path):
     assert "-m netscope" in launcher.read_text() and "/usr/bin/python3" in launcher.read_text()
 
 
+def test_windows_shortcut_starts_in_the_package_folder(monkeypatch, tmp_path):
+    scripts = []
+    monkeypatch.setattr(shortcut.subprocess, "run", lambda cmd, **kw: scripts.append(cmd[-1]))
+    shortcut.create_windows_shortcut(tmp_path)
+    assert f"$s.WorkingDirectory = '{paths.package_dir().parent}'" in scripts[0]
+    assert "$s.Arguments = '-m netscope'" in scripts[0]
+
+
 def test_data_dir_honours_override(tmp_path):
     assert paths.data_dir() == tmp_path / "data"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows data folder")
+def test_windows_data_dir_is_under_appdata(monkeypatch, tmp_path):
+    monkeypatch.delenv("NETSCOPE_DATA_DIR")
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    assert paths.data_dir() == (tmp_path / "NetScope").resolve()
 
 
 def test_ignore_cidrs_setting_is_forwarded_to_the_helper(monkeypatch):

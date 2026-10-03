@@ -1,5 +1,11 @@
 """Packet classification: which packets become events, and in which direction.
 No root, no network, no GeoIP database needed."""
+import json
+import socket
+import sys
+import threading
+import types
+
 import pytest
 from scapy.all import IP, TCP, UDP
 
@@ -77,3 +83,30 @@ def test_apple_block_is_hidden_by_default():
 ])
 def test_is_public(ip, public):
     assert capture.is_public(ip) is public
+
+
+class _NoThreads:
+    """Stands in for `threading` so run_helper's watcher (which calls os._exit on EOF) never starts."""
+    Lock = threading.Lock
+
+    class Thread:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def start(self):
+            pass
+
+
+def test_windows_without_npcap_reports_it_before_ready(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(capture, "conf", types.SimpleNamespace(use_pcap=False))
+    monkeypatch.setattr(capture, "threading", _NoThreads)
+    with socket.socket() as server:
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        assert capture.run_helper(server.getsockname()[1], "tok") == 1
+        conn, _ = server.accept()
+        with conn, conn.makefile("r", encoding="utf-8") as lines:
+            msgs = [json.loads(line) for line in lines]
+    assert [m["t"] for m in msgs] == ["hello", "err"]
+    assert msgs[1]["code"] == "npcap"
