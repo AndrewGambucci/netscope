@@ -32,8 +32,20 @@
   <div id="map"></div>
 
   <aside>
-    <div class="panel-title">▸ Live Connections</div>
-    <div id="feed"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" id="tab-live" role="tab" aria-selected="true" data-tab="live">Live <span class="tab-count" id="n-live">0</span></button>
+      <button class="tab" id="tab-threats" role="tab" aria-selected="false" data-tab="threats">Malicious <span class="tab-count threat" id="n-threats">0</span></button>
+    </div>
+    <div id="feed" role="tabpanel"></div>
+    <div id="threat-pane" role="tabpanel" hidden>
+      <div class="threat-bar">
+        <span id="threat-sources">0 sources</span>
+        <button class="btn" id="btn-clear-threats">Clear</button>
+      </div>
+      <div id="threat-msg" class="threat-msg" role="status"></div>
+      <div id="threat-feed"></div>
+      <div id="threat-empty" class="empty">No malicious connections seen yet.<br>Unsolicited inbound connection attempts from public IPs will appear here.</div>
+    </div>
 
     <div id="toplist">
       <div class="panel-title">▸ Top Destinations</div>

@@ -11,7 +11,7 @@ from collections.abc import Callable
 from flask import Flask, abort, render_template, request
 from flask_socketio import SocketIO
 
-from netscope import __version__, demo, paths, privilege
+from netscope import __version__, demo, firewall, paths, privilege
 from netscope.geo import GeoDB
 from netscope.logs import log
 from netscope.pipeline import Pipeline
@@ -97,6 +97,7 @@ class Hub:
         self._demo_stop: threading.Event | None = None
         self._listener: HelperListener | None = None
         self._workers = threading.BoundedSemaphore(8)
+        self._block_lock = threading.Lock()       # one firewall change (and UAC prompt) at a time
 
     # ── status ───────────────────────────────────────────────────────────────
     def set_status(self, mode: str, message: str = "", **extra) -> None:
@@ -182,6 +183,26 @@ class Hub:
             target=demo.run, args=(lambda geo, proto, direction: self.pipeline.publish(geo, proto, direction), stop),
             daemon=True, name="demo").start()
 
+    # ── blocking ─────────────────────────────────────────────────────────────
+    def check_can_block(self, ip: object) -> str:
+        """Canonical IP if it may be blocked, else firewall.BlockError. Only IPs NetScope has itself
+        flagged as malicious qualify, so a click can never block a normal connection."""
+        if self.status["mode"] == "demo":
+            raise firewall.BlockError("This is simulated demo data, so there is nothing real to block.")
+        canonical = firewall.normalize_public_ip(ip)
+        if not self.pipeline.is_flagged(canonical):
+            raise firewall.BlockError("Only IPs flagged as malicious can be blocked.")
+        return canonical
+
+    def block(self, ip: object) -> str:
+        canonical = self.check_can_block(ip)
+        with self._block_lock:
+            return firewall.block(canonical)
+
+    def unblock(self, ip: object) -> str:
+        with self._block_lock:
+            return firewall.unblock(ip)
+
     def stop_demo(self) -> None:
         with self._lock:
             stop, self._demo_stop = self._demo_stop, None
@@ -250,5 +271,37 @@ def create_server(port: int, geo: GeoDB | None = None, settings: Settings | None
     @socketio.on("start_demo")
     def _start_demo():
         hub.start_demo()
+
+    def _emit_blocked(to=None):
+        socketio.emit("blocked", {"ips": firewall.list_blocked(), "supported": firewall.supported()},
+                      **({"to": to} if to else {}))
+
+    @socketio.on("get_blocked")
+    def _get_blocked():
+        sid = request.sid
+        threading.Thread(target=_emit_blocked, args=(sid,), daemon=True).start()
+
+    def _change_block(action, data, sid):
+        ip = data.get("ip") if isinstance(data, dict) else None
+        try:
+            done = action(ip)
+            result = {"ok": True, "ip": done, "message": ""}
+        except firewall.BlockError as e:
+            result = {"ok": False, "ip": str(ip)[:64], "message": str(e)}
+        except Exception:  # noqa: BLE001 - never leak internals to the page
+            log.exception("firewall change failed")
+            result = {"ok": False, "ip": str(ip)[:64], "message": "The firewall change failed. See the log file."}
+        socketio.emit("block_result", result, to=sid)
+        _emit_blocked()
+
+    @socketio.on("block_ip")
+    def _block_ip(data):
+        sid = request.sid       # the change can wait on a UAC prompt, so run it off the socket thread
+        threading.Thread(target=_change_block, args=(hub.block, data, sid), daemon=True, name="block").start()
+
+    @socketio.on("unblock_ip")
+    def _unblock_ip(data):
+        sid = request.sid
+        threading.Thread(target=_change_block, args=(hub.unblock, data, sid), daemon=True, name="unblock").start()
 
     return app, socketio, hub
