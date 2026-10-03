@@ -23,6 +23,10 @@ def data_dir() -> Path:
         path = Path(override)
     elif sys.platform == "win32":
         path = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / APP_NAME
+        # Microsoft Store Python silently redirects AppData writes into its own package folder.
+        # Resolving the (existing) folder gives the real location, so logs and messages point there.
+        path.mkdir(parents=True, exist_ok=True)
+        path = path.resolve()
     elif sys.platform == "darwin":
         path = Path.home() / "Library" / "Application Support" / APP_NAME
     else:

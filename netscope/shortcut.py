@@ -72,18 +72,20 @@ def _ps_quote(value: str) -> str:
 
 
 def create_windows_shortcut(dest_dir: Path, target: str | None = None, args: str = "") -> Path:
+    workdir = Path.home()
     if target is None:
         python = Path(sys.executable)
         gui = python.with_name("pythonw.exe")             # no console window
         target = str(gui if gui.exists() else python)
         args = "-m netscope"
+        workdir = paths.package_dir().parent              # `-m netscope` also works from an uninstalled checkout
     link = dest_dir / f"{APP_NAME}.lnk"
     icon = _icon("icon.ico")
     script = (
         "$s = (New-Object -ComObject WScript.Shell).CreateShortcut(" + _ps_quote(str(link)) + ");"
         f"$s.TargetPath = {_ps_quote(target)};"
         f"$s.Arguments = {_ps_quote(args)};"
-        f"$s.WorkingDirectory = {_ps_quote(str(Path.home()))};"
+        f"$s.WorkingDirectory = {_ps_quote(str(workdir))};"
         f"$s.Description = {_ps_quote('NetScope - live network traffic map')};"
         + (f"$s.IconLocation = {_ps_quote(str(icon))};" if icon else "")
         + "$s.Save()"

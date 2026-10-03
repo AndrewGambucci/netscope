@@ -30,7 +30,7 @@ pip install git+https://github.com/AndrewGambucci/netscope
 netscope                      # run it
 netscope --create-shortcut    # put a NetScope icon on your Desktop
 ```
-On Windows you still need [Npcap](https://npcap.com/#download) first.
+On Windows you still need [Npcap](https://npcap.com/#download) first. `pip install git+…` also needs [Git](https://git-scm.com/download/win); without it, download the repo as a ZIP, unzip it, and run `pip install .` inside the folder.
 
 ## First run
 - **The location database downloads automatically** (about 60 MB, once; no account or key). It's refreshed monthly.
@@ -99,7 +99,7 @@ Everything works with no configuration. Optional environment variables:
 | `MAXMIND_LICENSE_KEY` | download MaxMind GeoLite2 instead of DB-IP (a `GeoLite2-City.mmdb` in the data folder is also used) |
 | `NETSCOPE_DATA_DIR` | override where NetScope keeps its files |
 
-Files live in `~/Library/Application Support/NetScope` (macOS) or `%APPDATA%\NetScope` (Windows): the location database, `config.json`, and `netscope.log`.
+Files live in `~/Library/Application Support/NetScope` (macOS) or `%APPDATA%\NetScope` (Windows): the location database, `config.json`, and `netscope.log`. Exception: a pip install on the Microsoft Store edition of Python keeps them in `%LOCALAPPDATA%\Packages\PythonSoftwareFoundation.Python.<version>_<id>\LocalCache\Roaming\NetScope`, because Windows redirects that Python's AppData. The exact path is printed when NetScope starts.
 
 ## How it works
 ```
